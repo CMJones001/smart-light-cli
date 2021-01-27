@@ -1,7 +1,8 @@
 mod nanoleaf;
 
 use ini::Ini;
-use nanoleaf::calls::{self, Action, Send};
+use nanoleaf::calls as nc;
+use nanoleaf::calls::{Action, Send};
 use reqwest::blocking;
 use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE};
 use std::path::PathBuf;
@@ -12,6 +13,9 @@ struct Nanoleaf {
     api_key: String,
 }
 
+/// API interface for the Nanoleaf lights
+///
+/// Commands can be sent by using the ``get`` method.
 impl Nanoleaf {
     pub fn new(path: &PathBuf) -> Nanoleaf {
         let conf = Ini::load_from_file(path).expect("unable to load .ini file");
@@ -88,10 +92,11 @@ fn main() {
     let config_path = PathBuf::from("conf.ini");
     let light = Nanoleaf::new(&config_path);
 
-    // let status_on = calls::NanoleafOn::new(true);
+    // let status_on = nc::On::new(true);
     // light.run(status_on)
 
-    let brightness = calls::NanoleafBrightness::new(100, Some(5));
-    light.run(&brightness);
-    println!("brightness = {:?}", brightness);
+    // let brightness = nc::On::new(100, Some(5));
+    // light.run(&brightness);
+    let identify = nc::Identify::new();
+    light.run(&identify);
 }
