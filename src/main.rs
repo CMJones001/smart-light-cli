@@ -1,19 +1,15 @@
+mod nanoleaf;
+
 use ini::Ini;
+use nanoleaf::calls::{self, Action, Send};
 use reqwest::blocking;
 use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE};
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::path::PathBuf;
 
 #[derive(Debug)]
 struct Nanoleaf {
     ip: String,
     api_key: String,
-}
-
-#[derive(Serialize)]
-struct NanoleafOn {
-    on: HashMap<String, bool>,
 }
 
 impl Nanoleaf {
@@ -57,14 +53,20 @@ impl Nanoleaf {
         response
     }
 
+    fn run<S: Send>(&self, signal: &S) {
+        match signal.action() {
+            Action::PUT => self.put(signal),
+            Action::POST => {}
+        }
+    }
+
     /// Send a PUT request to the nanoleaf
     ///
     /// # Arguments
     ///
-    /// * `ext` - The API extension
-    /// * `data` - The data to send in the PUT request
-    fn put(&self, ext: &str, data: &str) {
-        let request_url = format!("{addr}/{ext}", addr = self.addr(), ext = ext);
+    /// * `signal` - A nanoleaf call
+    fn put<S: Send>(&self, signal: &S) {
+        let request_url = format!("{addr}/{ext}", addr = self.addr(), ext = signal.url_ext());
         let mut headers = HeaderMap::new();
         headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
 
@@ -72,7 +74,7 @@ impl Nanoleaf {
         let res = client
             .put(&request_url)
             .headers(headers)
-            .body(data.to_string())
+            .body(signal.to_json())
             .send()
             .expect("Unable to send PUT request");
 
@@ -80,32 +82,16 @@ impl Nanoleaf {
         let success = res.status().is_success();
         println!("success = {}", success);
     }
-
-    /// Turn the lights on or off
-    fn on(&self, value: NanoleafOn) {
-        let ext = "state";
-        let data = value.to_json();
-        self.put(&ext, &data)
-    }
-}
-
-impl NanoleafOn {
-    pub fn new(status: bool) -> NanoleafOn {
-        let mut map = HashMap::new();
-        map.insert("value".to_string(), status);
-        NanoleafOn { on: map }
-    }
-
-    pub fn to_json(&self) -> String {
-        serde_json::to_string(self).unwrap()
-    }
 }
 
 fn main() {
     let config_path = PathBuf::from("conf.ini");
     let light = Nanoleaf::new(&config_path);
 
-    // light.on(true)
-    let status_on = NanoleafOn::new(true);
-    light.on(status_on)
+    // let status_on = calls::NanoleafOn::new(true);
+    // light.run(status_on)
+
+    let brightness = calls::NanoleafBrightness::new(100, Some(5));
+    light.run(&brightness);
+    println!("brightness = {:?}", brightness);
 }
