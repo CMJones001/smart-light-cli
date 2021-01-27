@@ -1,12 +1,19 @@
 use ini::Ini;
 use reqwest::blocking;
 use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::path::PathBuf;
 
 #[derive(Debug)]
 struct Nanoleaf {
     ip: String,
     api_key: String,
+}
+
+#[derive(Serialize)]
+struct NanoleafOn {
+    on: HashMap<String, bool>,
 }
 
 impl Nanoleaf {
@@ -75,11 +82,22 @@ impl Nanoleaf {
     }
 
     /// Turn the lights on or off
-    fn on(&self, value: bool) {
-        // TODO: Do this more cleverly with structs
+    fn on(&self, value: NanoleafOn) {
         let ext = "state";
-        let data = format!(r#"{{"on": {{"value": {val}}}}}"#, val = value.to_string());
+        let data = value.to_json();
         self.put(&ext, &data)
+    }
+}
+
+impl NanoleafOn {
+    pub fn new(status: bool) -> NanoleafOn {
+        let mut map = HashMap::new();
+        map.insert("value".to_string(), status);
+        NanoleafOn { on: map }
+    }
+
+    pub fn to_json(&self) -> String {
+        serde_json::to_string(self).unwrap()
     }
 }
 
@@ -87,5 +105,7 @@ fn main() {
     let config_path = PathBuf::from("conf.ini");
     let light = Nanoleaf::new(&config_path);
 
-    light.on(true)
+    // light.on(true)
+    let status_on = NanoleafOn::new(true);
+    light.on(status_on)
 }
