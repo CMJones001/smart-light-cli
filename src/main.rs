@@ -97,10 +97,11 @@ fn main() {
     // light.get(&status_on);
     // light.run(&status_on)
 
-    // let brightness = nc::Brightness::new(100, None);
-    // light.run(&brightness);
-    let temperature = nc::Temperature::new(3500);
-    light.run(&temperature);
+    // let brightness = nc::Brightness::new(100, Some(5));
+    let brightness = nc::Brightness::increment(20);
+    light.run(&brightness);
+    // let temperature = nc::Temperature::new(3500);
+    // light.run(&temperature);
     // let identify = nc::Identify::new();
     // light.run(&identify);
 }

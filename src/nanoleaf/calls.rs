@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 use serde::Serialize;
 use std::collections::HashMap;
+use std::convert::TryInto;
 
 pub enum Action {
     PUT,
@@ -46,18 +47,24 @@ impl Get for On {
 
 #[derive(Serialize, Debug)]
 pub struct Brightness {
-    brightness: HashMap<String, usize>,
+    brightness: HashMap<String, isize>,
 }
 impl Brightness {
-    pub fn new(value: usize, duration: Option<usize>) -> Brightness {
+    pub fn new(value: isize, duration: Option<usize>) -> Brightness {
         let mut map = HashMap::new();
         map.insert("value".to_string(), value);
-        if value > 100 || value < 1 {
+        if value > 100 || value < 0 {
             panic!("Brightness must be in the range [0, 100]")
         }
         if let Some(dur) = duration {
-            map.insert("duration".to_string(), dur);
+            map.insert("duration".to_string(), dur.try_into().unwrap());
         }
+        Brightness { brightness: map }
+    }
+
+    pub fn increment(value: isize) -> Brightness {
+        let mut map = HashMap::new();
+        map.insert("increment".to_string(), value);
         Brightness { brightness: map }
     }
 }
@@ -69,15 +76,21 @@ impl Send for Brightness {
 
 #[derive(Serialize, Debug)]
 pub struct Temperature {
-    ct: HashMap<String, usize>,
+    ct: HashMap<String, isize>,
 }
 impl Temperature {
-    pub fn new(value: usize) -> Temperature {
+    pub fn new(value: isize) -> Temperature {
         let mut map = HashMap::new();
         if value > 6500 || value < 1200 {
             panic!("Temperature must be in the range [1200, 6500]")
         }
         map.insert("value".to_string(), value);
+        Temperature { ct: map }
+    }
+
+    pub fn increment(value: isize) -> Temperature {
+        let mut map = HashMap::new();
+        map.insert("increment".to_string(), value);
         Temperature { ct: map }
     }
 }
