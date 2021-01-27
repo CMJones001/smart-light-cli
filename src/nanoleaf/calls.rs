@@ -9,12 +9,16 @@ pub enum Action {
 
 pub trait Send {
     fn to_json(&self) -> String;
-    fn url_ext(&self) -> &str {
+    fn send_url(&self) -> &str {
         &"state"
     }
     fn action(&self) -> Action {
         Action::PUT
     }
+}
+
+pub trait Get {
+    fn get_url(&self) -> &str;
 }
 
 #[derive(Serialize, Debug)]
@@ -34,6 +38,11 @@ impl Send for On {
         serde_json::to_string(self).unwrap()
     }
 }
+impl Get for On {
+    fn get_url(&self) -> &str {
+        &"state/on"
+    }
+}
 
 #[derive(Serialize, Debug)]
 pub struct Brightness {
@@ -43,6 +52,9 @@ impl Brightness {
     pub fn new(value: usize, duration: Option<usize>) -> Brightness {
         let mut map = HashMap::new();
         map.insert("value".to_string(), value);
+        if value > 100 || value < 1 {
+            panic!("Brightness must be in the range [0, 100]")
+        }
         if let Some(dur) = duration {
             map.insert("duration".to_string(), dur);
         }
@@ -50,6 +62,26 @@ impl Brightness {
     }
 }
 impl Send for Brightness {
+    fn to_json(&self) -> String {
+        serde_json::to_string(self).unwrap()
+    }
+}
+
+#[derive(Serialize, Debug)]
+pub struct Temperature {
+    ct: HashMap<String, usize>,
+}
+impl Temperature {
+    pub fn new(value: usize) -> Temperature {
+        let mut map = HashMap::new();
+        if value > 6500 || value < 1200 {
+            panic!("Temperature must be in the range [1200, 6500]")
+        }
+        map.insert("value".to_string(), value);
+        Temperature { ct: map }
+    }
+}
+impl Send for Temperature {
     fn to_json(&self) -> String {
         serde_json::to_string(self).unwrap()
     }
@@ -66,7 +98,7 @@ impl Send for Identify {
         String::from("")
     }
 
-    fn url_ext(&self) -> &str {
+    fn send_url(&self) -> &str {
         &"identify"
     }
 }

@@ -2,7 +2,7 @@ mod nanoleaf;
 
 use ini::Ini;
 use nanoleaf::calls as nc;
-use nanoleaf::calls::{Action, Send};
+use nanoleaf::calls::{Action, Get, Send};
 use reqwest::blocking;
 use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE};
 use std::path::PathBuf;
@@ -46,14 +46,15 @@ impl Nanoleaf {
 
     /// Send a GET request to the nanoleaf
     // TODO: We need to catch the first "/" in the ext
-    fn get(&self, ext: &str) -> String {
-        let full_request = format!("{addr}/{ext}", addr = self.addr(), ext = ext);
+    fn get<S: Get>(&self, signal: &S) -> String {
+        let full_request = format!("{addr}/{ext}", addr = self.addr(), ext = signal.get_url());
 
         let response = blocking::get(&full_request)
             .expect("Unable to send request")
             .text()
             .unwrap();
 
+        println!("response = {:?}", response);
         response
     }
 
@@ -70,7 +71,7 @@ impl Nanoleaf {
     ///
     /// * `signal` - A nanoleaf call
     fn put<S: Send>(&self, signal: &S) {
-        let request_url = format!("{addr}/{ext}", addr = self.addr(), ext = signal.url_ext());
+        let request_url = format!("{addr}/{ext}", addr = self.addr(), ext = signal.send_url());
         let mut headers = HeaderMap::new();
         headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
 
@@ -93,10 +94,13 @@ fn main() {
     let light = Nanoleaf::new(&config_path);
 
     // let status_on = nc::On::new(true);
-    // light.run(status_on)
+    // light.get(&status_on);
+    // light.run(&status_on)
 
-    // let brightness = nc::On::new(100, Some(5));
+    // let brightness = nc::Brightness::new(100, None);
     // light.run(&brightness);
-    let identify = nc::Identify::new();
-    light.run(&identify);
+    let temperature = nc::Temperature::new(3500);
+    light.run(&temperature);
+    // let identify = nc::Identify::new();
+    // light.run(&identify);
 }
