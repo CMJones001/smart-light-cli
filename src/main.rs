@@ -1,3 +1,4 @@
+mod colours;
 mod nanoleaf;
 
 use clap::{App, ArgMatches, ErrorKind::ArgumentNotFound};
@@ -105,6 +106,19 @@ fn main() {
     let light = Nanoleaf::new(&config_path);
     let yaml = load_yaml!("cli.yaml");
     let arg_parse = App::from_yaml(yaml).get_matches();
+
+    let time = std::time::Duration::from_secs(5);
+
+    let sat = nc::Colour::new(20, 70, 100);
+    light.run(&sat);
+    std::thread::sleep(time);
+
+    let sat = nc::Colour::new(300, 50, 30);
+    light.run(&sat);
+    std::thread::sleep(time);
+
+    light.run(&nc::On::new(false));
+    std::process::exit(0);
 
     match arg_parse.subcommand_name() {
         Some("off") => light.run(&nc::On::new(false)),

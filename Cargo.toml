@@ -13,3 +13,4 @@ serde_json = "1.0"
 rust-ini = "0.16"
 clap = {version = "2.33", features = ["yaml"]}
 xdg = "2.2"
+palette = "0.5.0"

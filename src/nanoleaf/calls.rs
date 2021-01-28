@@ -1,4 +1,5 @@
 #![allow(dead_code)]
+use palette::{self, Hsv};
 use serde::Serialize;
 use std::collections::HashMap;
 use std::convert::TryInto;
@@ -69,6 +70,44 @@ impl Brightness {
     }
 }
 impl Send for Brightness {
+    fn to_json(&self) -> String {
+        serde_json::to_string(self).unwrap()
+    }
+}
+
+#[derive(Serialize, Debug)]
+pub struct Colour {
+    hue: HashMap<String, isize>,
+    sat: HashMap<String, isize>,
+    brightness: HashMap<String, isize>,
+}
+impl Colour {
+    pub fn new(hue: isize, sat: isize, bri: isize) -> Colour {
+        let mut hue_map = HashMap::new();
+        if hue > 360 || hue < 0 {
+            panic!("Hue must be in the range [0, 360]")
+        }
+        hue_map.insert("value".to_string(), hue);
+
+        let mut sat_map = HashMap::new();
+        if sat > 100 || sat < 0 {
+            panic!("Sat must be in the range [0, 100]")
+        }
+        sat_map.insert("value".to_string(), sat);
+
+        let mut bri_map = HashMap::new();
+        if bri > 100 || bri < 0 {
+            panic!("Bri must be in the range [0, 100]")
+        }
+        bri_map.insert("value".to_string(), bri);
+        Colour {
+            sat: sat_map,
+            hue: hue_map,
+            brightness: bri_map,
+        }
+    }
+}
+impl Send for Colour {
     fn to_json(&self) -> String {
         serde_json::to_string(self).unwrap()
     }
