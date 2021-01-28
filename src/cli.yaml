@@ -1,5 +1,4 @@
 name: nanoleaf-cli
-author: Carl Jones
 about: >-
   CLI mananger for the nanoleaf smart lights
 args:
@@ -14,5 +13,11 @@ subcommands:
             help: Time taken for the transition in seconds
             short: d
             takes_value: true
+        - colour:
+            help: Set the colour of the lamp
+            short: c
+            takes_value: true
+            number_of_values: 3
+            conflicts_with: val
   - off:
       about: Turn the light off

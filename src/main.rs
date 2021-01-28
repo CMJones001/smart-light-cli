@@ -107,22 +107,9 @@ fn main() {
     let yaml = load_yaml!("cli.yaml");
     let arg_parse = App::from_yaml(yaml).get_matches();
 
-    let time = std::time::Duration::from_secs(5);
-
-    let sat = nc::Colour::new(20, 70, 100);
-    light.run(&sat);
-    std::thread::sleep(time);
-
-    let sat = nc::Colour::new(300, 50, 30);
-    light.run(&sat);
-    std::thread::sleep(time);
-
-    light.run(&nc::On::new(false));
-    std::process::exit(0);
-
     match arg_parse.subcommand_name() {
         Some("off") => light.run(&nc::On::new(false)),
-        Some("on") => set_brightness(&arg_parse, light),
+        Some("on") => turn_on_light(&arg_parse, light),
         _ => {
             println!("No command provided, give --help to see options");
             std::process::exit(1)
@@ -130,33 +117,25 @@ fn main() {
     };
 }
 
-/// Set the brightness of the lights from command line arguments
-fn set_brightness(arg_parse: &ArgMatches, light: Nanoleaf) {
+/// Parse the command line argument to change the light
+fn turn_on_light(arg_parse: &ArgMatches, light: Nanoleaf) {
     let brightness_args = arg_parse.subcommand_matches("on").unwrap();
-    // If no brigtness value is provided then simply turn the lights on,
-    // else attempt to parse the brightness value
-    let val = match brightness_args.value_of("val") {
-        Some(v) => v
-            .parse::<isize>()
-            .expect("Unable to parse brightness into int"),
-        None => {
-            light.run(&nc::On::new(true));
-            return;
+
+    if let Some(val) = brightness_args.value_of("val") {
+        let brightness = val.parse().unwrap();
+        let cmd = nc::Brightness::new(brightness, None);
+        light.run(&cmd);
+    } else if let Some(colour_args) = brightness_args.values_of("colour") {
+        let c: Vec<isize> = colour_args
+            .map(|i| i.parse().expect("Unable to parse colour arguments"))
+            .collect();
+        // This is how to unpack a vector in rust apparently
+        if let [hue, sat, brightness] = c[..] {
+            let cmd = nc::Colour::new(hue, sat, brightness);
+            light.run(&cmd);
         }
-    };
-
-    // Return None if there is no duration provided. Quit if the provided value
-    // cannot be parsed.
-    let duration = if let Some(dur) = brightness_args.value_of("duration") {
-        Some(dur.parse::<usize>().unwrap_or_else(|_| {
-            println!("Unable to parse duration argument");
-            std::process::exit(1);
-        }))
     } else {
-        // If nothing is provided
-        None
-    };
-
-    let brightness = nc::Brightness::new(val, duration);
-    light.run(&brightness);
+        let cmd = nc::On::new(true);
+        light.run(&cmd);
+    }
 }
