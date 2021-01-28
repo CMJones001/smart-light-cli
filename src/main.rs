@@ -107,9 +107,8 @@ fn main() {
     let arg_parse = App::from_yaml(yaml).get_matches();
 
     match arg_parse.subcommand_name() {
-        Some("on") => light.run(&nc::On::new(true)),
         Some("off") => light.run(&nc::On::new(false)),
-        Some("brightness") => set_brightness(&arg_parse, light),
+        Some("on") => set_brightness(&arg_parse, light),
         _ => {
             println!("No command provided, give --help to see options");
             std::process::exit(1)
@@ -119,12 +118,18 @@ fn main() {
 
 /// Set the brightness of the lights from command line arguments
 fn set_brightness(arg_parse: &ArgMatches, light: Nanoleaf) {
-    let brightness_args = arg_parse.subcommand_matches("brightness").unwrap();
-    let val: isize = brightness_args
-        .value_of("val")
-        .unwrap()
-        .parse()
-        .expect("Unable to parse brightness value into int");
+    let brightness_args = arg_parse.subcommand_matches("on").unwrap();
+    // If no brigtness value is provided then simply turn the lights on,
+    // else attempt to parse the brightness value
+    let val = match brightness_args.value_of("val") {
+        Some(v) => v
+            .parse::<isize>()
+            .expect("Unable to parse brightness into int"),
+        None => {
+            light.run(&nc::On::new(true));
+            return;
+        }
+    };
 
     // Return None if there is no duration provided. Quit if the provided value
     // cannot be parsed.
