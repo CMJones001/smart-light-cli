@@ -8,7 +8,7 @@ pub enum Action {
     POST,
 }
 
-pub trait Send {
+pub trait Send: std::fmt::Debug {
     fn to_json(&self) -> String;
     fn send_url(&self) -> &str {
         &"state"
@@ -100,6 +100,7 @@ impl Send for Temperature {
     }
 }
 
+#[derive(Serialize, Debug)]
 pub struct Identify {}
 impl Identify {
     pub fn new() -> Identify {

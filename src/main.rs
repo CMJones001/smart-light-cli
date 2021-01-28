@@ -1,11 +1,15 @@
 mod nanoleaf;
 
+use clap::{App, ArgMatches, ErrorKind::ArgumentNotFound};
 use ini::Ini;
 use nanoleaf::calls as nc;
 use nanoleaf::calls::{Action, Get, Send};
 use reqwest::blocking;
 use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE};
 use std::path::PathBuf;
+
+#[macro_use]
+extern crate clap;
 
 #[derive(Debug)]
 struct Nanoleaf {
@@ -74,6 +78,7 @@ impl Nanoleaf {
         let request_url = format!("{addr}/{ext}", addr = self.addr(), ext = signal.send_url());
         let mut headers = HeaderMap::new();
         headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
+        println!("signal = {:#?}", signal);
 
         let client = blocking::Client::new();
         let res = client
@@ -93,15 +98,41 @@ fn main() {
     let config_path = PathBuf::from("conf.ini");
     let light = Nanoleaf::new(&config_path);
 
-    // let status_on = nc::On::new(true);
-    // light.get(&status_on);
-    // light.run(&status_on)
+    let yaml = load_yaml!("cli.yaml");
+    let arg_parse = App::from_yaml(yaml).get_matches();
 
-    // let brightness = nc::Brightness::new(100, Some(5));
-    let brightness = nc::Brightness::increment(20);
+    match arg_parse.subcommand_name() {
+        Some("on") => light.run(&nc::On::new(true)),
+        Some("off") => light.run(&nc::On::new(false)),
+        Some("brightness") => set_brightness(&arg_parse, light),
+        _ => {
+            println!("No command provided, give --help to see options");
+            std::process::exit(1)
+        }
+    };
+}
+
+/// Set the brightness of the lights from command line arguments
+fn set_brightness(arg_parse: &ArgMatches, light: Nanoleaf) {
+    let brightness_args = arg_parse.subcommand_matches("brightness").unwrap();
+    let val: isize = brightness_args
+        .value_of("val")
+        .unwrap()
+        .parse()
+        .expect("Unable to parse brightness value into int");
+
+    // Return None if there is no duration provided. Quit if the provided value
+    // cannot be parsed.
+    let duration = if let Some(dur) = brightness_args.value_of("duration") {
+        Some(dur.parse::<usize>().unwrap_or_else(|_| {
+            println!("Unable to parse duration argument");
+            std::process::exit(1);
+        }))
+    } else {
+        // If nothing is provided
+        None
+    };
+
+    let brightness = nc::Brightness::new(val, duration);
     light.run(&brightness);
-    // let temperature = nc::Temperature::new(3500);
-    // light.run(&temperature);
-    // let identify = nc::Identify::new();
-    // light.run(&identify);
 }

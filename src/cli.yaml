@@ -1,0 +1,19 @@
+name: nanoleaf-cli
+author: Carl Jones
+about: >-
+  CLI mananger for the nanoleaf smart lights
+args:
+subcommands:
+  - on:
+      about: Turn the light on 
+  - off:
+      about: Turn the light off
+  - brightness:
+      about: "Set the brightness of the light (range:[0, 100])"
+      args:
+        - val:
+            required: true
+        - duration:
+            help: Time taken for the tranisiton in seconds
+            short: d
+            takes_value: true
