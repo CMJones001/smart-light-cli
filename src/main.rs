@@ -7,6 +7,7 @@ use nanoleaf::calls::{Action, Get, Send};
 use reqwest::blocking;
 use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE};
 use std::path::PathBuf;
+use xdg;
 
 #[macro_use]
 extern crate clap;
@@ -78,6 +79,7 @@ impl Nanoleaf {
         let request_url = format!("{addr}/{ext}", addr = self.addr(), ext = signal.send_url());
         let mut headers = HeaderMap::new();
         headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
+
         println!("signal = {:#?}", signal);
 
         let client = blocking::Client::new();
@@ -95,9 +97,12 @@ impl Nanoleaf {
 }
 
 fn main() {
-    let config_path = PathBuf::from("conf.ini");
-    let light = Nanoleaf::new(&config_path);
+    let xdg_dirs = xdg::BaseDirectories::with_prefix("nanoleaf.cli").unwrap();
+    let config_path = xdg_dirs
+        .place_config_file("conf.ini")
+        .expect("Unable to place config file");
 
+    let light = Nanoleaf::new(&config_path);
     let yaml = load_yaml!("cli.yaml");
     let arg_parse = App::from_yaml(yaml).get_matches();
 
