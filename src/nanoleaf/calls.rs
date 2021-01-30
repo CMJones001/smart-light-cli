@@ -1,27 +1,8 @@
 #![allow(dead_code)]
-use palette::{self, Hsv};
+use crate::common::{Get, Send};
 use serde::Serialize;
 use std::collections::HashMap;
 use std::convert::TryInto;
-
-pub enum Action {
-    PUT,
-    POST,
-}
-
-pub trait Send: std::fmt::Debug {
-    fn to_json(&self) -> String;
-    fn send_url(&self) -> &str {
-        &"state"
-    }
-    fn action(&self) -> Action {
-        Action::PUT
-    }
-}
-
-pub trait Get {
-    fn get_url(&self) -> &str;
-}
 
 #[derive(Serialize, Debug)]
 pub struct On {
