@@ -13,27 +13,33 @@ extern crate clap;
 
 fn main() {
     let config_path = common::get_config_path();
-    let nanoleaf = Nanoleaf::new(&config_path);
-    let hue_livinigroom = Hue::new(&config_path, 1);
-    let hue_bedroom = Hue::new(&config_path, 2);
-
     let yaml = load_yaml!("cli.yaml");
     let arg_parse = App::from_yaml(yaml).get_matches();
 
-    let light = nanoleaf;
+    let lamp_id: Vec<usize> = values_t!(arg_parse.values_of("lamp"), usize).unwrap();
+    let lights: Vec<Box<dyn Lamp>> = vec![
+        Box::new(Nanoleaf::new(&config_path)),
+        Box::new(Hue::new(&config_path, 1)),
+        Box::new(Hue::new(&config_path, 2)),
+    ];
 
-    match arg_parse.subcommand_name() {
-        Some("off") => light.on(false),
-        Some("on") => turn_on_light(arg_parse, light),
-        _ => {
-            println!("No command provided, give --help to see options");
-            std::process::exit(1)
-        }
-    };
+    for id in lamp_id.iter() {
+        let offset_id = id + 0;
+        let light = &lights[offset_id];
+
+        match arg_parse.subcommand_name() {
+            Some("off") => light.on(false),
+            Some("on") => light.on(true),
+            _ => {
+                println!("No command provided, give --help to see options");
+                std::process::exit(1)
+            }
+        };
+    }
 }
 
 /// Parse the command line argument for turning the lights on
-fn turn_on_light<T: Lamp>(arg_parse: ArgMatches, light: T) {
+fn turn_on_light(arg_parse: ArgMatches, light: Box<dyn Lamp>) {
     let brightness_args = arg_parse.subcommand_matches("on").unwrap();
 
     if let Some(val) = brightness_args.value_of("val") {
