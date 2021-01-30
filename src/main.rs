@@ -4,7 +4,7 @@ mod hue;
 mod nanoleaf;
 
 use clap::{App, ArgMatches};
-use common::Lamp;
+use common::{Lamp, Sig};
 use hue::Hue;
 use nanoleaf::Nanoleaf;
 
@@ -27,33 +27,30 @@ fn main() {
         let offset_id = id + 0;
         let light = &lights[offset_id];
 
-        match arg_parse.subcommand_name() {
-            Some("off") => light.on(false),
-            Some("on") => light.on(true),
-            _ => {
-                println!("No command provided, give --help to see options");
-                std::process::exit(1)
-            }
-        };
+        let sig = get_command_signal(&arg_parse);
+        light.put(sig);
     }
 }
 
-/// Parse the command line argument for turning the lights on
-fn turn_on_light(arg_parse: ArgMatches, light: Box<dyn Lamp>) {
-    let brightness_args = arg_parse.subcommand_matches("on").unwrap();
-
-    if let Some(val) = brightness_args.value_of("val") {
-        let brightness = val.parse().unwrap();
-        light.brightness(brightness);
-    } else if let Some(colour_args) = brightness_args.values_of("colour") {
-        let c: Vec<isize> = colour_args
-            .map(|i| i.parse().expect("Unable to parse colour arguments"))
-            .collect();
-        // This is how to unpack a vector in rust apparently
-        if let [hue, sat, brightness] = c[..] {
-            light.colour(hue, sat, brightness);
+fn get_command_signal(args: &ArgMatches) -> Sig {
+    if let Some(brightness_args) = args.subcommand_matches("on") {
+        // Parse the on sub group
+        if let Some(val) = brightness_args.value_of("val") {
+            let brightness = val.parse().unwrap();
+            return Sig::Brightness(brightness);
+        } else if let Some(colour_args) = brightness_args.values_of("colour") {
+            let c: Vec<isize> = colour_args
+                .map(|i| i.parse().expect("Unable to parse colour arguments"))
+                .collect();
+            // This is how to unpack a vector in rust apparently
+            if let [hue, sat, brightness] = c[..] {
+                return Sig::Colour(hue, sat, brightness);
+            }
+            return Sig::On(true);
+        } else {
+            return Sig::On(true);
         }
     } else {
-        light.on(true);
+        return Sig::On(false);
     }
 }

@@ -46,6 +46,7 @@ pub trait Lamp {
         let mut headers = HeaderMap::new();
         headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
 
+        println!("signal = {:#?}", cmd.json);
         let client = blocking::Client::new();
         let res = client
             .put(&request_url)
@@ -63,4 +64,8 @@ pub trait Lamp {
     fn on_command(&self, state: bool) -> ApiCommand;
     fn brightness_command(&self, val: isize) -> ApiCommand;
     fn colour_command(&self, hue: isize, sat: isize, bri: isize) -> ApiCommand;
+}
+
+pub fn scale(input_val: isize, new_max: isize, old_max: isize) -> isize {
+    (input_val * new_max) / old_max
 }
