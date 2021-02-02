@@ -1,0 +1,30 @@
+name: nanoleaf-cli
+about: >-
+  CLI mananger for the nanoleaf smart lights
+args:
+  - lamp:
+      short: l
+      takes_value: true
+      default_value: "0"
+      help: ID of the lamp to activate
+      max_values: 3
+      require_delimiter: true
+subcommands:
+  - on:
+      about: Turn the light on
+      args:
+        - val:
+            takes_value: true
+            help: Set the brightness of the lamp
+        - duration:
+            help: Time taken for the transition in seconds
+            short: d
+            takes_value: true
+        - colour:
+            help: Set the colour of the lamp
+            short: c
+            takes_value: true
+            number_of_values: 3
+            conflicts_with: val
+  - off:
+      about: Turn the light off
