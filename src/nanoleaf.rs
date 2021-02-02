@@ -1,6 +1,25 @@
-use crate::common::ApiCommand;
-use crate::common::Lamp;
+//! Generate API calls for nanoleaf
+//!
+//! # API Overview
+//!
+//! The signal to change the HSV are given as a nested dictionary, the key of the outer
+//! level is the property to change, the value is the a dictionary with a key of "value"
+//! and an integer with the requested value.
+//!
+//! The values take a range of:
+//! - brightness: [0, 100]
+//! - sat: [0, 100]
+//! - hue: [0, 360]
+//!
+//! ## Example command
+//!
+//! ``{"brightness": {"value":70}, "sat": {"value":20}, "hue", {"value":120}}``
+//!
+//! We note that these command changes all panels.
+
+use crate::common::{ApiCommand, Lamp};
 use ini::Ini;
+use palette::Hsv;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
@@ -78,5 +97,9 @@ impl Lamp for Nanoleaf {
 
         let json = serde_json::to_string(&outer_struct).unwrap();
         ApiCommand { addr, json }
+    }
+
+    fn palette_command(&self, col: Hsv) -> ApiCommand {
+        self.on_command(true)
     }
 }

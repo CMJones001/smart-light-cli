@@ -1,14 +1,51 @@
-use crate::common::{scale, ApiCommand, Lamp};
+//! Generate API calls for the Phillips Hue lights
+//!
+//! # API overview
+//!
+//! The signal to change the HSV of a light bulb are given as single layer dictionary.
+//! We note however, that if the light is off, it will not turn back on when the colour
+//! is changed unless an "on" command is also sent explicitly.
+//!
+//! The values take a range of:
+//! - hue: [0, 65535]
+//! - sat: [0, 255]
+//! - bri: [0, 255]
+//! - on: true/false
+//!
+//! ## Example command
+//!
+//! ``{"hue":30000, "sat":200, "bri":255, "on":true}``
+//!
+//! The bulbs are address independantly, via a ``lamp_id`` value.
+
+use crate::common::{scale, scaleftoi, ApiCommand, Lamp};
 use ini::Ini;
-use serde::Serialize;
+use palette::Hsv;
+use serde::{Deserialize, Serialize};
 use serde_json::{Map, Number, Value};
 use std::collections::HashMap;
 use std::path::PathBuf;
 
+/// Controller for the Hue RGB lights.
+///
+/// # Parameters:
+///
+/// * `path` - Path to the .ini file containing a ``[hue]`` section with
+///         the API key and IP address of the hue bridge.
+/// * `lamp_id` - Index of the lamp.
 pub struct Hue {
     ip: String,
     api_key: String,
     lamp_id: isize,
+}
+
+/// Container for the mixed data type values to be parsed into json
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
+struct ColourOnDict {
+    hue: isize,
+    bri: isize,
+    sat: isize,
+    on: bool,
 }
 
 impl Hue {
@@ -55,7 +92,7 @@ impl Lamp for Hue {
     fn brightness_command(&self, val: isize) -> ApiCommand {
         let addr = "state".to_string();
         let mut inner_struct = HashMap::new();
-        let val = scale(val, 255, 100);
+        let val = scale(val, 100, 255);
         inner_struct.insert("bri", val);
         let json = serde_json::to_string(&inner_struct).unwrap();
         ApiCommand { addr, json }
@@ -63,30 +100,76 @@ impl Lamp for Hue {
 
     fn colour_command(&self, hue: isize, sat: isize, bri: isize) -> ApiCommand {
         let addr = "state".to_string();
-        let mut mixed_dict = Map::new();
+        let hue = scale(hue, 360, 65535);
+        let bri = scale(bri, 100, 255);
+        let sat = scale(sat, 100, 255);
+        let on = true;
 
-        // Note we have to use the map structure to allow for dicts with
-        // mixed item types
-        scale_add(&mut mixed_dict, "hue", hue, 65535, 360);
-        scale_add(&mut mixed_dict, "sat", sat, 255, 100);
-        scale_add(&mut mixed_dict, "bri", bri, 255, 100);
+        let colours = ColourOnDict { hue, bri, sat, on };
+        let json = serde_json::to_string(&colours).unwrap();
+        ApiCommand { addr, json }
+    }
 
-        mixed_dict.insert("on".to_string(), Value::Bool(true));
+    fn palette_command(&self, col: Hsv) -> ApiCommand {
+        let addr = "state".to_string();
+        // TODO: We have to change the dict type into a mixed dict for the on command
 
+        let hue = scaleftoi(col.hue.to_positive_degrees(), 360.0, 65535);
+        let sat = scaleftoi(col.saturation, 1.0, 255);
+        let bri = scaleftoi(col.value, 1.0, 255);
+        let on = true;
+
+        let mixed_dict = ColourOnDict { hue, sat, bri, on };
         let json = serde_json::to_string(&mixed_dict).unwrap();
         ApiCommand { addr, json }
     }
 }
 
-fn scale_add(
-    map: &mut serde_json::Map<String, Value>,
-    label: &str,
-    val: isize,
-    max_val: isize,
-    old_max: isize,
-) {
-    map.insert(
-        label.to_string(),
-        Value::Number(Number::from(scale(val, max_val, old_max))),
-    );
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use test_case::test_case;
+
+    #[test_case( 50.0 =>  50)]
+    #[test_case( 0.0 =>  0)]
+    #[test_case( 270.0 =>  270)]
+    fn test_get_hue(hue: f64) -> isize {
+        let colour = Hsv::new(hue, 0.5, 0.5);
+        colour.hue.to_positive_degrees() as isize
+    }
+
+    #[test_case( 0.1 =>  25)]
+    #[test_case( 0.0 =>  0)]
+    #[test_case( 1.0 =>  255)]
+    fn test_get_sat(sat: f64) -> isize {
+        let colour = Hsv::new(10.0, sat, 0.5);
+        scaleftoi(colour.saturation, 1.0, 255)
+    }
+
+    #[test_case(50.0, 0.1, 0.1)]
+    #[test_case(180.0, 0.9, 0.9)]
+    #[test_case(270.0, 1.0, 1.0)]
+    fn test_parse_hsv(hue_un: f32, sat_un: f32, bri_un: f32) {
+        let colour = Hsv::new(hue_un, sat_un, bri_un);
+        let light = Hue {
+            ip: "".to_string(),
+            api_key: "".to_string(),
+            lamp_id: 0,
+        };
+        let api = light.palette_command(colour);
+        let json_test = api.json;
+        let colour_map_test: ColourOnDict = serde_json::from_str(&json_test).unwrap();
+
+        let hue = (hue_un / 360.0 * 65536.0) as isize;
+        let sat = (sat_un * 255.0) as isize;
+        let bri = (bri_un * 255.0) as isize;
+        let colour_map_expected = ColourOnDict {
+            hue,
+            sat,
+            bri,
+            on: true,
+        };
+
+        assert_eq!(colour_map_test, colour_map_expected);
+    }
 }

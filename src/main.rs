@@ -37,7 +37,7 @@ fn get_command_signal(args: &ArgMatches) -> Sig {
         // Parse the on sub group
         if let Some(val) = brightness_args.value_of("val") {
             let brightness = val.parse().unwrap();
-            return Sig::Brightness(brightness);
+            Sig::Brightness(brightness)
         } else if let Some(colour_args) = brightness_args.values_of("colour") {
             let c: Vec<isize> = colour_args
                 .map(|i| i.parse().expect("Unable to parse colour arguments"))
@@ -46,11 +46,11 @@ fn get_command_signal(args: &ArgMatches) -> Sig {
             if let [hue, sat, brightness] = c[..] {
                 return Sig::Colour(hue, sat, brightness);
             }
-            return Sig::On(true);
+            Sig::On(true)
         } else {
-            return Sig::On(true);
+            Sig::On(true)
         }
     } else {
-        return Sig::On(false);
+        Sig::On(false)
     }
 }
