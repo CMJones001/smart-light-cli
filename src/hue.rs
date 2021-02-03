@@ -18,7 +18,7 @@
 //!
 //! The bulbs are address independantly, via a ``lamp_id`` value.
 
-use crate::common::{scale, scaleftoi, ApiCommand, Lamp};
+use crate::common::{scale, scalegen, ApiCommand, Lamp};
 use ini::Ini;
 use palette::Hsv;
 use serde::{Deserialize, Serialize};
@@ -114,9 +114,9 @@ impl Lamp for Hue {
         let addr = "state".to_string();
         // TODO: We have to change the dict type into a mixed dict for the on command
 
-        let hue = scaleftoi(col.hue.to_positive_degrees(), 360.0, 65535);
-        let sat = scaleftoi(col.saturation, 1.0, 255);
-        let bri = scaleftoi(col.value, 1.0, 255);
+        let hue = scalegen(col.hue.to_positive_degrees(), 360.0, 65535);
+        let sat = scalegen(col.saturation, 1.0, 255);
+        let bri = scalegen(col.value, 1.0, 255);
         let on = true;
 
         let mixed_dict = ColourOnDict { hue, sat, bri, on };
@@ -143,7 +143,7 @@ mod tests {
     #[test_case( 1.0 =>  255)]
     fn test_get_sat(sat: f64) -> isize {
         let colour = Hsv::new(10.0, sat, 0.5);
-        scaleftoi(colour.saturation, 1.0, 255)
+        scalegen(colour.saturation, 1.0, 255)
     }
 
     #[test_case(50.0, 0.1, 0.1)]
@@ -160,7 +160,7 @@ mod tests {
         let json_test = api.json;
         let colour_map_test: ColourOnDict = serde_json::from_str(&json_test).unwrap();
 
-        let hue = (hue_un / 360.0 * 65536.0) as isize;
+        let hue = (hue_un / 360.0 * 65535.0) as isize;
         let sat = (sat_un * 255.0) as isize;
         let bri = (bri_un * 255.0) as isize;
         let colour_map_expected = ColourOnDict {

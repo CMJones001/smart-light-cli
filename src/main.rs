@@ -7,6 +7,7 @@ use clap::{App, ArgMatches};
 use common::{Lamp, Sig};
 use hue::Hue;
 use nanoleaf::Nanoleaf;
+use palette::Hsv;
 
 #[macro_use]
 extern crate clap;
@@ -33,20 +34,26 @@ fn main() {
 }
 
 fn get_command_signal(args: &ArgMatches) -> Sig {
-    if let Some(brightness_args) = args.subcommand_matches("on") {
+    if let Some(on_args) = args.subcommand_matches("on") {
         // Parse the on sub group
-        if let Some(val) = brightness_args.value_of("val") {
+        if let Some(val) = on_args.value_of("val") {
             let brightness = val.parse().unwrap();
             Sig::Brightness(brightness)
-        } else if let Some(colour_args) = brightness_args.values_of("colour") {
-            let c: Vec<isize> = colour_args
-                .map(|i| i.parse().expect("Unable to parse colour arguments"))
-                .collect();
-            // This is how to unpack a vector in rust apparently
+        } else if on_args.is_present("colour") {
+            let c = values_t_or_exit!(on_args.values_of("colour"), isize);
             if let [hue, sat, brightness] = c[..] {
-                return Sig::Colour(hue, sat, brightness);
+                Sig::Colour(hue, sat, brightness)
+            } else {
+                unreachable!()
             }
-            Sig::On(true)
+        } else if on_args.is_present("palette") {
+            let p = values_t_or_exit!(on_args.values_of("palette"), f32);
+            if let [hue, sat, brightness] = p[..] {
+                let pal = Hsv::new(hue, sat, brightness);
+                Sig::Palette(pal)
+            } else {
+                unreachable!()
+            }
         } else {
             Sig::On(true)
         }

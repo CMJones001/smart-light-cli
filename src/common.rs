@@ -1,5 +1,5 @@
 //! Tools common to any light struct
-use num_traits::{cast, Float, NumCast};
+use num_traits::{cast, NumCast, NumOps};
 use palette::Hsv;
 use reqwest::blocking;
 use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE};
@@ -87,13 +87,14 @@ pub trait Lamp {
     fn palette_command(&self, colour: Hsv) -> ApiCommand;
 }
 
+/// Scale an interger value relative to one range into a new range
 pub fn scale(input_val: isize, old_max: isize, new_max: isize) -> isize {
     input_val * new_max / old_max
 }
 
-pub fn scaleftoi<T>(input_val: T, old_max: T, new_max: isize) -> isize
+pub fn scalegen<T>(input_val: T, old_max: T, new_max: isize) -> isize
 where
-    T: Float + NumCast,
+    T: NumOps + NumCast,
 {
     let unit_val: T = input_val * cast(new_max).unwrap() / old_max;
     cast(unit_val).unwrap()
@@ -114,23 +115,23 @@ mod tests {
     #[test_case(0.50 => 50; "Half range")]
     #[test_case(0.1 => 10; "Full range")]
     #[test_case(0.0 => 0; "Zero range")]
-    fn test_scaleftoi_hundred(val_unscaled: f64) -> isize {
-        scaleftoi(val_unscaled, 1.0, 100)
+    fn test_scalegen_hundred(val_unscaled: f64) -> isize {
+        scalegen(val_unscaled, 1.0, 100)
     }
 
     #[test_case(0.50, 1.0, 360 => 180)]
     #[test_case(1.00, 1.0, 360 => 360)]
     #[test_case(0.50, 2.0, 360 => 90)]
     #[test_case(10.0, 100.0, 360 => 36)]
-    fn test_scaleftoi_gen(val: f64, old_range: f64, new_range: isize) -> isize {
-        scaleftoi(val, old_range, new_range)
+    fn test_scalegen_gen(val: f64, old_range: f64, new_range: isize) -> isize {
+        scalegen(val, old_range, new_range)
     }
 
     #[test_case(0.50, 1.0, 360 => 180)]
     #[test_case(1.00, 1.0, 360 => 360)]
     #[test_case(0.50, 2.0, 360 => 90)]
     #[test_case(10.0, 100.0, 360 => 36)]
-    fn test_scaleftoi_f32(val: f32, old_range: f32, new_range: isize) -> isize {
-        scaleftoi(val, old_range, new_range)
+    fn test_scalegen_f32(val: f32, old_range: f32, new_range: isize) -> isize {
+        scalegen(val, old_range, new_range)
     }
 }

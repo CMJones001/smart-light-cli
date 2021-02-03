@@ -25,6 +25,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "assert-json-diff"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e7e8a5b58feafea5db7a9f41fe4b3da8f860b3e82397af2d2ad7c1c36e1867f1"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "async-stream"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -449,6 +459,7 @@ dependencies = [
 name = "nanoleaf-cli"
 version = "0.1.0"
 dependencies = [
+ "assert-json-diff",
  "clap",
  "num-traits",
  "palette",
