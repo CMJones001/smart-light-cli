@@ -7,7 +7,8 @@ use clap::{App, ArgMatches};
 use common::{Lamp, Sig};
 use hue::Hue;
 use nanoleaf::Nanoleaf;
-use palette::Hsv;
+use palette::{Gradient, Hsv};
+use std::{thread, time};
 
 #[macro_use]
 extern crate clap;
@@ -28,36 +29,52 @@ fn main() {
         let offset_id = id + 0;
         let light = &lights[offset_id];
 
-        let sig = get_command_signal(&arg_parse);
-        light.put(sig);
+        match &arg_parse.subcommand() {
+            ("on", Some(args)) => light.put(get_on_signal(&args)),
+            ("off", Some(_args)) => light.put(Sig::On(false)),
+            ("gradient", Some(args)) => {
+                println!("Gradient!");
+            }
+            _ => {}
+        }
+    }
+
+    // let hue_one = Hsv::new(30.0, 1.0, 0.8);
+    // let hue_two = Hsv::new(30.0, 0.3, 0.8);
+
+    // let grad = Gradient::new(vec![hue_one, hue_two]);
+    // let delay = time::Duration::from_secs(3);
+    // let n_steps = 5;
+
+    // for (i, colour) in grad.take(5).enumerate() {}
+}
+
+/// Parse command line arguments for the "on" group
+///
+/// This is used to set immediately set the colour of the light
+fn get_on_signal(args: &ArgMatches) -> Sig {
+    if let Some(val) = args.value_of("val") {
+        let brightness = val.parse().unwrap();
+        Sig::Brightness(brightness)
+    } else if args.is_present("colour") {
+        let c = values_t_or_exit!(args.values_of("colour"), isize);
+        if let [hue, sat, brightness] = c[..] {
+            Sig::Colour(hue, sat, brightness)
+        } else {
+            unreachable!()
+        }
+    } else if args.is_present("palette") {
+        let p = values_t_or_exit!(args.values_of("palette"), f32);
+        if let [hue, sat, brightness] = p[..] {
+            let pal = Hsv::new(hue, sat, brightness);
+            Sig::Palette(pal)
+        } else {
+            unreachable!()
+        }
+    } else {
+        Sig::On(true)
     }
 }
 
-fn get_command_signal(args: &ArgMatches) -> Sig {
-    if let Some(on_args) = args.subcommand_matches("on") {
-        // Parse the on sub group
-        if let Some(val) = on_args.value_of("val") {
-            let brightness = val.parse().unwrap();
-            Sig::Brightness(brightness)
-        } else if on_args.is_present("colour") {
-            let c = values_t_or_exit!(on_args.values_of("colour"), isize);
-            if let [hue, sat, brightness] = c[..] {
-                Sig::Colour(hue, sat, brightness)
-            } else {
-                unreachable!()
-            }
-        } else if on_args.is_present("palette") {
-            let p = values_t_or_exit!(on_args.values_of("palette"), f32);
-            if let [hue, sat, brightness] = p[..] {
-                let pal = Hsv::new(hue, sat, brightness);
-                Sig::Palette(pal)
-            } else {
-                unreachable!()
-            }
-        } else {
-            Sig::On(true)
-        }
-    } else {
-        Sig::On(false)
-    }
-}
+/// Unpack arguments into a hue sat brightness tuple
+fn unpack_to_colour(args: &ArgMatches) {}

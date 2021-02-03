@@ -34,3 +34,6 @@ subcommands:
             conflicts_with: val
   - off:
       about: Turn the light off
+
+  - gradient:
+      about: Transition the light between two colour

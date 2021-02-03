@@ -62,7 +62,10 @@ pub trait Lamp {
         let mut headers = HeaderMap::new();
         headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
 
-        println!("signal = {:#?}", cmd.json);
+        if cfg!(debug_assertions) {
+            println!("signal = {:#?}", cmd.json);
+        }
+
         let client = blocking::Client::new();
         let res = client
             .put(&request_url)
@@ -73,7 +76,9 @@ pub trait Lamp {
 
         // TODO: add logging to catch if this fails
         let success = res.status().is_success();
-        println!("success = {}", success);
+        if !success {
+            println!("success = {}", success);
+        }
     }
 
     /// The base address for where to send the API requests

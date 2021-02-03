@@ -22,7 +22,6 @@ use crate::common::{scale, scalegen, ApiCommand, Lamp};
 use ini::Ini;
 use palette::Hsv;
 use serde::{Deserialize, Serialize};
-use serde_json::{Map, Number, Value};
 use std::collections::HashMap;
 use std::path::PathBuf;
 
