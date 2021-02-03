@@ -26,5 +26,11 @@ subcommands:
             takes_value: true
             number_of_values: 3
             conflicts_with: val
+        - palette:
+            help: Set the palette of the lamp
+            short: p
+            takes_value: true
+            number_of_values: 3
+            conflicts_with: val
   - off:
       about: Turn the light off
