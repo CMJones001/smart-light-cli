@@ -21,7 +21,8 @@
 //! - ct: [1200, 6500]
 //!
 //! In this case the lower values are the hotter temperature. This roughly corresponds to
-//! the actual colour temperature.
+//! the actual colour temperature, daylight is at 5000 k or approximately 73/100 in our
+//! range.
 //!
 //! We note that these command changes all panels.
 

@@ -40,7 +40,7 @@ pub fn get_gradient_config(args: &ArgMatches) -> Config {
 
 /// Parse the "on" subsection from the command line
 pub fn get_on_config(args: &ArgMatches) -> Config {
-    let conf = if let Some(bri) = args.value_of("val") {
+    let conf = if let Some(bri) = args.value_of("brightness") {
         let brightness = bri.parse().unwrap();
         Sig::Brightness(brightness)
     } else if let Some(temp) = args.value_of("temperature") {
