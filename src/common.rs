@@ -14,6 +14,7 @@ pub fn get_config_path() -> PathBuf {
 }
 
 /// Possible signals to control the lamp
+#[derive(Copy, Clone)]
 pub enum Sig {
     /// Turn the lamp on or off
     On(bool),
