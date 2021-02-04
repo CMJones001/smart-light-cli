@@ -13,7 +13,7 @@ subcommands:
   - on:
       about: Turn the light on
       args:
-        - val:
+        - brightness:
             takes_value: true
             help: Set the brightness of the lamp
         - duration:

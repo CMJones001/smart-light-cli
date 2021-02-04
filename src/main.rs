@@ -1,10 +1,12 @@
 mod colours;
 mod common;
+mod config_parse;
 mod hue;
 mod nanoleaf;
 
 use clap::{App, ArgMatches};
 use common::{Lamp, Sig};
+use config_parse::{Config, GradientArgs, OnArgs};
 use hue::Hue;
 use nanoleaf::Nanoleaf;
 use palette::{Gradient, Hsv};
@@ -31,14 +33,15 @@ fn main() {
         .enumerate()
         .filter(move |(num, _)| lamp_id.contains(num));
 
+    let config = get_config(&arg_parse);
+
     let mut threads = vec![];
-    if arg_parse.is_present("gradient") {
-        for (_, light) in filtered_lights {
-            threads.push(thread::spawn(move || {
-                thread::sleep(time::Duration::from_secs(5));
-                light.put(Sig::On(true));
-            }));
-        }
+    for (_, light) in filtered_lights {
+        threads.push(thread::spawn(move || match config {
+            Config::Gradient(args) => set_gradient(args, light),
+            Config::On(args) => set_on(args, light),
+            Config::Off => light.put(Sig::On(false)),
+        }));
     }
 
     for t in threads {
@@ -58,52 +61,37 @@ fn main() {
     // }
 }
 
+fn get_config(args: &ArgMatches) -> Config {
+    match &args.subcommand() {
+        ("gradient", Some(args)) => config_parse::get_gradient_config(args),
+        ("on", Some(args)) => config_parse::get_on_config(args),
+        ("off", _) => Config::Off,
+        _ => Config::Off,
+    }
+}
+
 /// Transition between two colours
-fn set_gradient(args: &ArgMatches, light: Box<dyn Lamp>) {
+fn set_gradient(args: GradientArgs, light: Box<dyn Lamp>) {
     let hue_one = Hsv::new(30.0, 1.0, 0.8);
     let hue_two = Hsv::new(30.0, 0.3, 0.8);
 
     let grad = Gradient::new(vec![hue_one, hue_two]);
-    // Bit clunky but we have an error otherwise
-    let total_time: u64 = args
-        .value_of("time")
-        .unwrap()
-        .parse()
-        .expect("Unable to parse total time");
-    let n_steps = 5;
-    let delay = time::Duration::from_secs(total_time) / (n_steps as u32);
+    let delay = time::Duration::from_secs(args.total_time) / (args.n_steps as u32);
 
-    for (i, colour) in grad.take(n_steps).enumerate() {
-        // light.put(Sig::Palette(colour));
-        println!("i = {}", i);
-
+    for (i, colour) in grad.take(args.n_steps as usize).enumerate() {
+        light.put(Sig::Palette(colour));
         thread::sleep(delay);
     }
 }
 
-/// Parse command line arguments for the "on" group
-///
-/// This is used to set immediately set the colour of the light
-fn get_on_signal(args: &ArgMatches) -> Sig {
-    if let Some(val) = args.value_of("val") {
-        let brightness = val.parse().unwrap();
-        Sig::Brightness(brightness)
-    } else if args.is_present("colour") {
-        let c = values_t_or_exit!(args.values_of("colour"), isize);
-        if let [hue, sat, brightness] = c[..] {
-            Sig::Colour(hue, sat, brightness)
-        } else {
-            unreachable!()
-        }
-    } else if args.is_present("palette") {
-        let p = values_t_or_exit!(args.values_of("palette"), f32);
-        if let [hue, sat, brightness] = p[..] {
-            let pal = Hsv::new(hue, sat, brightness);
-            Sig::Palette(pal)
-        } else {
-            unreachable!()
-        }
-    } else {
-        Sig::On(true)
-    }
+fn set_on(args: OnArgs, light: Box<dyn Lamp>) {
+    // It looks that we might be able to reduce this down and skip the conversion step
+    let sig = match args {
+        OnArgs::Palette(pal) => Sig::Palette(pal),
+        OnArgs::Colour(hue, sat, bri) => Sig::Colour(hue, sat, bri),
+        OnArgs::Brightness(bri) => Sig::Brightness(bri),
+        OnArgs::On => Sig::On(true),
+    };
+
+    light.put(sig);
 }
