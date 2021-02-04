@@ -54,6 +54,12 @@ struct ColourOnDict {
     on: bool,
 }
 
+#[derive(Serialize)]
+struct TempOnDict {
+    ct: isize,
+    on: bool,
+}
+
 impl Hue {
     pub fn new(path: &PathBuf, lamp_id: isize) -> Hue {
         let conf = Ini::load_from_file(path).expect("unable to load .ini file");
@@ -132,11 +138,17 @@ impl Lamp for Hue {
 
     fn temperature_command(&self, temp: isize) -> ApiCommand {
         let addr = "state".to_string();
-        let mut inner_struct = HashMap::new();
-        let val = temp_mapping(temp);
-        inner_struct.insert("ct", val);
-        let json = serde_json::to_string(&inner_struct).unwrap();
+        let temp_dict = TempOnDict::new(temp);
+        let json = serde_json::to_string(&temp_dict).unwrap();
         ApiCommand { addr, json }
+    }
+}
+
+impl TempOnDict {
+    fn new(value: isize) -> TempOnDict {
+        let ct = temp_mapping(value);
+        let on = true;
+        TempOnDict { ct, on }
     }
 }
 
