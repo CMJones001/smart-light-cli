@@ -1,5 +1,6 @@
 use crate::common::{Lamp, Sig};
 use clap::ArgMatches;
+use core::str::FromStr;
 use palette::{Gradient, Hsv};
 use std::{thread, time};
 
@@ -43,20 +44,12 @@ pub fn get_on_config(args: &ArgMatches) -> Config {
         let brightness = bri.parse().unwrap();
         Sig::Brightness(brightness)
     } else if args.is_present("colour") {
-        let c = values_t_or_exit!(args.values_of("colour"), isize);
-        if let [hue, sat, brightness] = c[..] {
-            Sig::Colour(hue, sat, brightness)
-        } else {
-            unreachable!()
-        }
+        let (hue, sat, bri) = unpack_values::<isize>(args, "colour");
+        Sig::Colour(hue, sat, bri)
     } else if args.is_present("palette") {
-        let p = values_t_or_exit!(args.values_of("palette"), f32);
-        if let [hue, sat, brightness] = p[..] {
-            let pal = Hsv::new(hue, sat, brightness);
-            Sig::Palette(pal)
-        } else {
-            unreachable!()
-        }
+        let (hue, sat, bri) = unpack_values::<f32>(args, "palette");
+        let pal = Hsv::new(hue, sat, bri);
+        Sig::Palette(pal)
     } else {
         Sig::On(true)
     };
@@ -71,5 +64,14 @@ pub fn set_gradient(args: GradientArgs, light: Box<dyn Lamp>) {
     for (_, colour) in grad.take(args.n_steps as usize).enumerate() {
         light.put(Sig::Palette(colour));
         thread::sleep(delay);
+    }
+}
+
+fn unpack_values<T: FromStr + Copy>(args: &ArgMatches, label: &str) -> (T, T, T) {
+    let c = values_t_or_exit!(args.values_of(label), T);
+    if let [hue, sat, brightness] = c[..] {
+        (hue, sat, brightness)
+    } else {
+        unreachable!()
     }
 }

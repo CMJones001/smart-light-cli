@@ -1,4 +1,3 @@
-mod colours;
 mod common;
 mod config_parse;
 mod hue;

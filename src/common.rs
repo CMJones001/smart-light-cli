@@ -23,6 +23,8 @@ pub enum Sig {
     /// Set the colour to the (hue, saturation, brightness) tuple.
     /// The maximum values are (360, 100, 100).
     Colour(isize, isize, isize),
+    /// Set the colour using the Hsv struct.
+    /// This has better gradient interpolation between colours.
     Palette(Hsv),
 }
 
