@@ -19,34 +19,66 @@ fn main() {
     let arg_parse = App::from_yaml(yaml).get_matches();
 
     let lamp_id: Vec<usize> = values_t!(arg_parse.values_of("lamp"), usize).unwrap();
-    let lights: Vec<Box<dyn Lamp>> = vec![
+
+    let lights: Vec<Box<dyn Lamp + Send>> = vec![
         Box::new(Nanoleaf::new(&config_path)),
         Box::new(Hue::new(&config_path, 1)),
         Box::new(Hue::new(&config_path, 2)),
     ];
 
-    for id in lamp_id.iter() {
-        let offset_id = id + 0;
-        let light = &lights[offset_id];
+    let filtered_lights = lights
+        .into_iter()
+        .enumerate()
+        .filter(move |(num, _)| lamp_id.contains(num));
 
-        match &arg_parse.subcommand() {
-            ("on", Some(args)) => light.put(get_on_signal(&args)),
-            ("off", Some(_args)) => light.put(Sig::On(false)),
-            ("gradient", Some(args)) => {
-                println!("Gradient!");
-            }
-            _ => {}
+    let mut threads = vec![];
+    if arg_parse.is_present("gradient") {
+        for (_, light) in filtered_lights {
+            threads.push(thread::spawn(move || {
+                thread::sleep(time::Duration::from_secs(5));
+                light.put(Sig::On(true));
+            }));
         }
     }
 
-    // let hue_one = Hsv::new(30.0, 1.0, 0.8);
-    // let hue_two = Hsv::new(30.0, 0.3, 0.8);
+    for t in threads {
+        t.join();
+    }
 
-    // let grad = Gradient::new(vec![hue_one, hue_two]);
-    // let delay = time::Duration::from_secs(3);
-    // let n_steps = 5;
+    // thread::spawn(|| {
+    //     for light in filtered_light()
+    // })
+    // for (_light_id, light) in filtered_lights {
+    //     match &arg_parse.subcommand() {
+    //         ("on", Some(args)) => light.put(get_on_signal(&args)),
+    //         ("off", Some(_args)) => light.put(Sig::On(false)),
+    //         ("gradient", Some(args)) => set_gradient(args, light),
+    //         _ => {}
+    //     }
+    // }
+}
 
-    // for (i, colour) in grad.take(5).enumerate() {}
+/// Transition between two colours
+fn set_gradient(args: &ArgMatches, light: Box<dyn Lamp>) {
+    let hue_one = Hsv::new(30.0, 1.0, 0.8);
+    let hue_two = Hsv::new(30.0, 0.3, 0.8);
+
+    let grad = Gradient::new(vec![hue_one, hue_two]);
+    // Bit clunky but we have an error otherwise
+    let total_time: u64 = args
+        .value_of("time")
+        .unwrap()
+        .parse()
+        .expect("Unable to parse total time");
+    let n_steps = 5;
+    let delay = time::Duration::from_secs(total_time) / (n_steps as u32);
+
+    for (i, colour) in grad.take(n_steps).enumerate() {
+        // light.put(Sig::Palette(colour));
+        println!("i = {}", i);
+
+        thread::sleep(delay);
+    }
 }
 
 /// Parse command line arguments for the "on" group
@@ -75,6 +107,3 @@ fn get_on_signal(args: &ArgMatches) -> Sig {
         Sig::On(true)
     }
 }
-
-/// Unpack arguments into a hue sat brightness tuple
-fn unpack_to_colour(args: &ArgMatches) {}

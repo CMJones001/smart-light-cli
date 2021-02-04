@@ -37,3 +37,14 @@ subcommands:
 
   - gradient:
       about: Transition the light between two colour
+      args:
+        - steps:
+            takes_value: true
+            short: s
+            help: Number of steps in the gradient
+            default_value: "10"
+        - time:
+            takes_value: true
+            short: t
+            help: Total time for the transition in seconds
+            default_value: "5"
