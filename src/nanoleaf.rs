@@ -15,6 +15,14 @@
 //!
 //! ``{"brightness": {"value":70}, "sat": {"value":20}, "hue", {"value":120}}``
 //!
+//! ## Colour temperature
+//!
+//! There is a colour temperature independant of the colour commands
+//! - ct: [1200, 6500]
+//!
+//! In this case the lower values are the hotter temperature. This roughly corresponds to
+//! the actual colour temperature.
+//!
 //! We note that these command changes all panels.
 
 use crate::common::{scalegen, ApiCommand, Lamp};
@@ -106,6 +114,19 @@ impl Lamp for Nanoleaf {
         let json = serde_json::to_string(&cmd_dict).unwrap();
         ApiCommand { addr, json }
     }
+
+    fn temperature_command(&self, temp: isize) -> ApiCommand {
+        let addr = "state".to_string();
+        let mut cmd_dict = HashMap::new();
+        let val = temp_mapping(temp);
+        wrap_insert(&mut cmd_dict, "ct", val);
+        let json = serde_json::to_string(&cmd_dict).unwrap();
+        ApiCommand { addr, json }
+    }
+}
+
+fn temp_mapping(val: isize) -> isize {
+    scalegen(val, 100, 5300) + 1200
 }
 
 /// Pack the hue, sat, bri values inside a nested dict
@@ -225,5 +246,12 @@ mod tests {
         let result_test: NestedDict = serde_json::from_str(&cmd.json).unwrap();
 
         assert_eq!(result_test, result_expected)
+    }
+
+    #[test_case(0 => 1200)]
+    #[test_case(50 => 3850)]
+    #[test_case(100 => 6500)]
+    fn test_temp_mapping(val_in: isize) -> isize {
+        temp_mapping(val_in)
     }
 }

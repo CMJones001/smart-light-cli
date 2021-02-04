@@ -16,6 +16,13 @@
 //!
 //! ``{"hue":30000, "sat":200, "bri":255, "on":true}``
 //!
+//! ## Colour temperature
+//!
+//! There is a colour temperature independant of the colour commands
+//! - ct: [154, 500]
+//!
+//! In this case the lower values are the colder temperature
+//!
 //! The bulbs are address independantly, via a ``lamp_id`` value.
 
 use crate::common::{scale, scalegen, ApiCommand, Lamp};
@@ -122,6 +129,19 @@ impl Lamp for Hue {
         let json = serde_json::to_string(&mixed_dict).unwrap();
         ApiCommand { addr, json }
     }
+
+    fn temperature_command(&self, temp: isize) -> ApiCommand {
+        let addr = "state".to_string();
+        let mut inner_struct = HashMap::new();
+        let val = temp_mapping(temp);
+        inner_struct.insert("ct", val);
+        let json = serde_json::to_string(&inner_struct).unwrap();
+        ApiCommand { addr, json }
+    }
+}
+
+fn temp_mapping(val: isize) -> isize {
+    scale(100 - val, 100, 346) + 154
 }
 
 #[cfg(test)]
@@ -170,5 +190,12 @@ mod tests {
         };
 
         assert_eq!(colour_map_test, colour_map_expected);
+    }
+
+    #[test_case(100 => 154)]
+    #[test_case(0 => 500)]
+    #[test_case(50 => 327)]
+    fn test_temp_mapping(val_in: isize) -> isize {
+        temp_mapping(val_in)
     }
 }

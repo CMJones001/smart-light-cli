@@ -43,6 +43,9 @@ pub fn get_on_config(args: &ArgMatches) -> Config {
     let conf = if let Some(bri) = args.value_of("val") {
         let brightness = bri.parse().unwrap();
         Sig::Brightness(brightness)
+    } else if let Some(temp) = args.value_of("temperature") {
+        let temperature = temp.parse().unwrap();
+        Sig::Temp(temperature)
     } else if args.is_present("colour") {
         let (hue, sat, bri) = unpack_values::<isize>(args, "colour");
         Sig::Colour(hue, sat, bri)

@@ -20,6 +20,10 @@ subcommands:
             help: Time taken for the transition in seconds
             short: d
             takes_value: true
+        - temperature:
+            help: Time taken for the transition in seconds
+            short: T
+            takes_value: true
         - colour:
             help: Set the colour of the lamp
             short: c

@@ -26,6 +26,7 @@ pub enum Sig {
     /// Set the colour using the Hsv struct.
     /// This has better gradient interpolation between colours.
     Palette(Hsv),
+    Temp(isize),
 }
 
 #[derive(Debug)]
@@ -52,6 +53,10 @@ pub trait Lamp {
         self.put(Sig::Palette(pal))
     }
 
+    fn temperature(&self, temp: isize) {
+        self.put(Sig::Temp(temp))
+    }
+
     /// Send the given signal to the lamp via PUT request
     fn put(&self, signal: Sig) {
         let cmd = match signal {
@@ -59,6 +64,7 @@ pub trait Lamp {
             Sig::Brightness(val) => self.brightness_command(val),
             Sig::Colour(hue, sat, bri) => self.colour_command(hue, sat, bri),
             Sig::Palette(col) => self.palette_command(col),
+            Sig::Temp(temp) => self.temperature_command(temp),
         };
 
         let request_url = format!("{addr}/{ext}", addr = self.addr(), ext = cmd.addr);
@@ -93,6 +99,7 @@ pub trait Lamp {
     /// Generate the request to change the colour of the lamp
     fn colour_command(&self, hue: isize, sat: isize, bri: isize) -> ApiCommand;
     fn palette_command(&self, colour: Hsv) -> ApiCommand;
+    fn temperature_command(&self, temp: isize) -> ApiCommand;
 }
 
 /// Scale an interger value relative to one range into a new range
