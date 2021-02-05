@@ -187,7 +187,7 @@ mod tests {
             api_key: "".to_string(),
             lamp_id: 0,
         };
-        let api = light.palette_command(colour);
+        let api = light.palette_command(colour).unwrap();
         let json_test = api.json;
         let colour_map_test: ColourOnDict = serde_json::from_str(&json_test).unwrap();
 

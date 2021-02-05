@@ -34,9 +34,9 @@ fn main() {
         .enumerate()
         .filter(move |(num, _)| selected_lamp_id.contains(num));
 
-    // Dispatch each command to a new thread
     let config = get_config(&arg_parse);
 
+    // Possibly quit early if the config > scene > list provided
     if let Config::Scene(_, list) = config {
         if list {
             let scenes = SceneList::new(&"/tmp/scene_list.json", None);
@@ -45,6 +45,7 @@ fn main() {
         }
     };
 
+    // conf is moved to Arc that allows multiple references between threads
     let conf = Arc::new(config);
     let mut threads = vec![];
     for (_, light) in filtered_lights {
