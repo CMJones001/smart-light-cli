@@ -58,3 +58,7 @@ subcommands:
         - name:
             takes_value: true
             help: Name of the scene as used in the nanoleaf app
+        - list:
+            short: l
+            takes_value: false
+            help: List the possible scenes

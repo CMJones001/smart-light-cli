@@ -2,15 +2,13 @@ mod common;
 mod config_parse;
 mod hue;
 mod nanoleaf;
-mod scenes;
 
+use crate::nanoleaf::SceneList;
 use clap::{App, ArgMatches};
 use common::{Lamp, Sig};
 use config_parse::Config;
 use hue::Hue;
 use nanoleaf::Nanoleaf;
-use scenes::SceneList;
-use std::path::Path;
 use std::sync::Arc;
 use std::thread;
 
@@ -39,31 +37,13 @@ fn main() {
     // Dispatch each command to a new thread
     let config = get_config(&arg_parse);
 
-    // // Place holder for the scene actions
-    // if let Config::Scene(name) = config {
-    //     println!("running scene",);
-    //     let nanoleaf_light = Nanoleaf::new(&config_path);
-
-    //     let temp_path = Path::new("/tmp/scene_list.json");
-
-    //     let sce = match SceneList::from_file(temp_path) {
-    //         Ok(list) => list,
-    //         Err(e) => {
-    //             println!("e = {:?}", e);
-    //             println!("Unable to read from cache");
-    //             let list = SceneList::from_scene(&nanoleaf_light);
-    //             list.to_file(temp_path);
-    //             list
-    //         }
-    //     };
-
-    //     println!("sce = {:?}", sce.names);
-    //     let name = "Jungle".to_string();
-    //     let signal = Sig::Scene(name);
-    //     nanoleaf_light.put(&signal);
-
-    //     std::process::exit(0);
-    // }
+    if let Config::Scene(_, list) = config {
+        if list {
+            let scenes = SceneList::new(&"/tmp/scene_list.json", None);
+            println!("Scene list: {:?}", scenes.names);
+            std::process::exit(0);
+        }
+    };
 
     let conf = Arc::new(config);
     let mut threads = vec![];
@@ -72,8 +52,8 @@ fn main() {
         threads.push(thread::spawn(move || match conf.as_ref() {
             Config::Gradient(args) => config_parse::set_gradient(&args, light),
             Config::On(signal) => light.put(&signal),
-            Config::Off => light.put(&Sig::On(false)),
-            Config::Scene(name) => light.put(&Sig::Scene(name.clone())),
+            Config::Off => light.on(false),
+            Config::Scene(name, _) => light.put(&Sig::Scene(name.clone())),
         }));
     }
 
@@ -88,8 +68,8 @@ fn get_config(args: &ArgMatches) -> Config {
     match &args.subcommand() {
         ("gradient", Some(args)) => config_parse::get_gradient_config(args),
         ("on", Some(args)) => config_parse::get_on_config(args),
-        ("off", _) => Config::Off,
         ("scene", Some(args)) => config_parse::get_scene_config(args),
+        ("off", _) => Config::Off,
         _ => Config::Off,
     }
 }

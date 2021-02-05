@@ -26,13 +26,15 @@
 //!
 //! We note that these command changes all panels.
 
-use crate::common::{scalegen, ApiCommand, Lamp};
-use crate::scenes::Scene;
+use crate::common::{scalegen, ApiCommand, GetSig, Lamp};
 use ini::Ini;
 use num_traits::{NumCast, NumOps};
 use palette::Hsv;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::fs::File;
+use std::io;
+use std::path::{Path, PathBuf};
 
 type NestedDict = HashMap<String, HashMap<String, isize>>;
 
@@ -161,8 +163,6 @@ fn wrap_insert(outer_dict: &mut NestedDict, label: &str, value: isize) {
     outer_dict.insert(label.to_string(), inner_struct);
 }
 
-impl Scene for Nanoleaf {}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -266,5 +266,45 @@ mod tests {
     #[test_case(100 => 6500)]
     fn test_temp_mapping(val_in: isize) -> isize {
         temp_mapping(val_in)
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct SceneList {
+    pub names: Vec<String>,
+}
+
+impl SceneList {
+    pub fn new<P: AsRef<Path>>(path: &P, light: Option<Nanoleaf>) -> SceneList {
+        let names = match SceneList::from_file(path) {
+            Ok(list) => list,
+            Err(e) => {
+                println!("error = {}", e);
+                println!("Unable to read from cache");
+                let light = light.expect("Unable to find scene cache and no light given");
+                let list = SceneList::from_scene(&light);
+                list.to_file(path);
+                list
+            }
+        };
+        names
+    }
+
+    fn from_scene(n: &Nanoleaf) -> SceneList {
+        let signal = GetSig::Scene;
+        let names_text = n.get(signal);
+        let names = serde_json::from_str(&names_text).unwrap();
+        SceneList { names }
+    }
+
+    fn from_file<P: AsRef<Path>>(path: P) -> Result<SceneList, io::Error> {
+        let file = File::open(path)?;
+        let json = serde_json::from_reader(&file)?;
+        Ok(json)
+    }
+
+    fn to_file<P: AsRef<Path>>(&self, path: P) {
+        let file = File::create(path).expect("Unable to open file");
+        serde_json::to_writer(&file, &self).expect("Unable to save name list to file");
     }
 }

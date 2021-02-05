@@ -99,7 +99,6 @@ pub trait Lamp {
         if !success {
             println!("success = {}", success);
         }
-        println!("res.text = {:?}", res.text().unwrap());
     }
 
     fn get(&self, signal: GetSig) -> String {
@@ -135,24 +134,24 @@ pub trait Lamp {
     /// The base address for where to send the API requests
     fn addr(&self) -> String;
     /// Generate the request to turn the lamp on or off
-    fn on_command(&self, state: bool) -> Option<ApiCommand> {
+    fn on_command(&self, _state: bool) -> Option<ApiCommand> {
         None
     }
     /// Generate the request to turn the lamp on or off
-    fn brightness_command(&self, val: isize) -> Option<ApiCommand> {
+    fn brightness_command(&self, _val: isize) -> Option<ApiCommand> {
         None
     }
     /// Generate the request to change the colour of the lamp
-    fn colour_command(&self, hue: isize, sat: isize, bri: isize) -> Option<ApiCommand> {
+    fn colour_command(&self, _hue: isize, _sat: isize, _bri: isize) -> Option<ApiCommand> {
         None
     }
-    fn palette_command(&self, colour: Hsv) -> Option<ApiCommand> {
+    fn palette_command(&self, _colour: Hsv) -> Option<ApiCommand> {
         None
     }
-    fn temperature_command(&self, temp: isize) -> Option<ApiCommand> {
+    fn temperature_command(&self, _temp: isize) -> Option<ApiCommand> {
         None
     }
-    fn scene_command(&self, scene_name: String) -> Option<ApiCommand> {
+    fn scene_command(&self, _scene_name: String) -> Option<ApiCommand> {
         None
     }
 }

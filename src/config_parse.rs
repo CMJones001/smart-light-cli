@@ -12,7 +12,7 @@ pub enum Config {
     Gradient(GradientArgs),
     On(Sig),
     Off,
-    Scene(String),
+    Scene(String, bool),
 }
 
 #[derive(Copy, Clone)]
@@ -63,8 +63,11 @@ pub fn get_on_config(args: &ArgMatches) -> Config {
 }
 
 pub fn get_scene_config(args: &ArgMatches) -> Config {
-    let scene_name = args.value_of("name").expect("Unable find scene name");
-    Config::Scene(scene_name.to_string())
+    if args.is_present("list") | !args.is_present("name") {
+        return Config::Scene("".to_string(), true);
+    }
+    let scene_name = args.value_of("name").expect("Unable to parse scene name");
+    Config::Scene(scene_name.to_string(), false)
 }
 
 /// Transition between two colours
