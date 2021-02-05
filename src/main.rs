@@ -11,6 +11,7 @@ use hue::Hue;
 use nanoleaf::Nanoleaf;
 use scenes::SceneList;
 use std::path::Path;
+use std::sync::Arc;
 use std::thread;
 
 #[macro_use]
@@ -38,38 +39,41 @@ fn main() {
     // Dispatch each command to a new thread
     let config = get_config(&arg_parse);
 
-    // Place holder for the scene actions
-    if let Config::Scene = config {
-        println!("running scene",);
-        let nanoleaf_light = Nanoleaf::new(&config_path);
+    // // Place holder for the scene actions
+    // if let Config::Scene(name) = config {
+    //     println!("running scene",);
+    //     let nanoleaf_light = Nanoleaf::new(&config_path);
 
-        let temp_path = Path::new("/tmp/scene_list.json");
+    //     let temp_path = Path::new("/tmp/scene_list.json");
 
-        let sce = match SceneList::from_file(temp_path) {
-            Ok(list) => list,
-            Err(e) => {
-                println!("e = {:?}", e);
-                println!("Unable to read from cache");
-                let list = SceneList::from_scene(&nanoleaf_light);
-                list.to_file(temp_path);
-                list
-            }
-        };
+    //     let sce = match SceneList::from_file(temp_path) {
+    //         Ok(list) => list,
+    //         Err(e) => {
+    //             println!("e = {:?}", e);
+    //             println!("Unable to read from cache");
+    //             let list = SceneList::from_scene(&nanoleaf_light);
+    //             list.to_file(temp_path);
+    //             list
+    //         }
+    //     };
 
-        println!("sce = {:?}", sce.names);
-        let signal = Sig::Scene;
-        nanoleaf_light.put(signal);
+    //     println!("sce = {:?}", sce.names);
+    //     let name = "Jungle".to_string();
+    //     let signal = Sig::Scene(name);
+    //     nanoleaf_light.put(&signal);
 
-        std::process::exit(0);
-    }
+    //     std::process::exit(0);
+    // }
 
+    let conf = Arc::new(config);
     let mut threads = vec![];
     for (_, light) in filtered_lights {
-        threads.push(thread::spawn(move || match config {
-            Config::Gradient(args) => config_parse::set_gradient(args, light),
-            Config::On(signal) => light.put(signal),
-            Config::Off => light.put(Sig::On(false)),
-            Config::Scene => std::process::exit(0),
+        let conf = Arc::clone(&conf);
+        threads.push(thread::spawn(move || match conf.as_ref() {
+            Config::Gradient(args) => config_parse::set_gradient(&args, light),
+            Config::On(signal) => light.put(&signal),
+            Config::Off => light.put(&Sig::On(false)),
+            Config::Scene(name) => light.put(&Sig::Scene(name.clone())),
         }));
     }
 
@@ -85,7 +89,7 @@ fn get_config(args: &ArgMatches) -> Config {
         ("gradient", Some(args)) => config_parse::get_gradient_config(args),
         ("on", Some(args)) => config_parse::get_on_config(args),
         ("off", _) => Config::Off,
-        ("scene", _) => Config::Scene,
+        ("scene", Some(args)) => config_parse::get_scene_config(args),
         _ => Config::Off,
     }
 }

@@ -7,12 +7,12 @@ use std::{thread, time};
 /// Container for the command line arguments
 ///
 /// The rest of the behaviour of the project follows from this enum.
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub enum Config {
     Gradient(GradientArgs),
     On(Sig),
     Off,
-    Scene,
+    Scene(String),
 }
 
 #[derive(Copy, Clone)]
@@ -62,13 +62,18 @@ pub fn get_on_config(args: &ArgMatches) -> Config {
     Config::On(conf)
 }
 
+pub fn get_scene_config(args: &ArgMatches) -> Config {
+    let scene_name = args.value_of("name").expect("Unable find scene name");
+    Config::Scene(scene_name.to_string())
+}
+
 /// Transition between two colours
-pub fn set_gradient(args: GradientArgs, light: Box<dyn Lamp>) {
+pub fn set_gradient(args: &GradientArgs, light: Box<dyn Lamp>) {
     let grad = Gradient::new(vec![args.hue_one, args.hue_two]);
     let delay = time::Duration::from_secs(args.total_time) / (args.n_steps as u32);
 
     for (_, colour) in grad.take(args.n_steps as usize).enumerate() {
-        light.put(Sig::Palette(colour));
+        light.put(&Sig::Palette(colour));
         thread::sleep(delay);
     }
 }

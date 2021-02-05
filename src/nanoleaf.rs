@@ -130,7 +130,7 @@ impl Lamp for Nanoleaf {
         let addr = "effects".to_string();
         let mut outer_dict = HashMap::new();
 
-        outer_dict.insert("select".to_string(), "Golden sun".to_string());
+        outer_dict.insert("select".to_string(), scene_name.to_string());
         let json = serde_json::to_string(&outer_dict).unwrap();
         Some(ApiCommand { addr, json })
     }

@@ -14,7 +14,7 @@ pub fn get_config_path() -> PathBuf {
 }
 
 /// Possible signals to control the lamp
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub enum Sig {
     /// Turn the lamp on or off
     On(bool),
@@ -27,7 +27,7 @@ pub enum Sig {
     /// This has better gradient interpolation between colours.
     Palette(Hsv),
     Temp(isize),
-    Scene,
+    Scene(String),
 }
 
 pub enum GetSig {
@@ -43,34 +43,34 @@ pub struct ApiCommand {
 /// Documentation for the Lamp struct
 pub trait Lamp {
     fn on(&self, state: bool) {
-        self.put(Sig::On(state));
+        self.put(&Sig::On(state));
     }
 
     fn brightness(&self, val: isize) {
-        self.put(Sig::Brightness(val));
+        self.put(&Sig::Brightness(val));
     }
 
     fn colour(&self, hue: isize, sat: isize, bri: isize) {
-        self.put(Sig::Colour(hue, sat, bri))
+        self.put(&Sig::Colour(hue, sat, bri))
     }
 
     fn palette(&self, pal: Hsv) {
-        self.put(Sig::Palette(pal))
+        self.put(&Sig::Palette(pal))
     }
 
     fn temperature(&self, temp: isize) {
-        self.put(Sig::Temp(temp))
+        self.put(&Sig::Temp(temp))
     }
 
     /// Send the given signal to the lamp via PUT request
-    fn put(&self, signal: Sig) {
+    fn put(&self, signal: &Sig) {
         let cmd_signal = match signal {
-            Sig::On(state) => self.on_command(state),
-            Sig::Brightness(val) => self.brightness_command(val),
-            Sig::Colour(hue, sat, bri) => self.colour_command(hue, sat, bri),
-            Sig::Palette(col) => self.palette_command(col),
-            Sig::Temp(temp) => self.temperature_command(temp),
-            Sig::Scene => self.scene_command("".to_string()),
+            Sig::On(state) => self.on_command(*state),
+            Sig::Brightness(val) => self.brightness_command(*val),
+            Sig::Colour(hue, sat, bri) => self.colour_command(*hue, *sat, *bri),
+            Sig::Palette(col) => self.palette_command(*col),
+            Sig::Temp(temp) => self.temperature_command(*temp),
+            Sig::Scene(name) => self.scene_command(name.to_string()),
         };
 
         let cmd = match cmd_signal {

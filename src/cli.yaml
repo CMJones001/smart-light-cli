@@ -54,3 +54,7 @@ subcommands:
             default_value: "5"
   - scene: 
       about: Load a complex scene
+      args:
+        - name:
+            takes_value: true
+            help: Name of the scene as used in the nanoleaf app
