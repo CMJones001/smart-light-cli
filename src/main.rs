@@ -2,12 +2,15 @@ mod common;
 mod config_parse;
 mod hue;
 mod nanoleaf;
+mod scenes;
 
 use clap::{App, ArgMatches};
 use common::{Lamp, Sig};
 use config_parse::Config;
 use hue::Hue;
 use nanoleaf::Nanoleaf;
+use scenes::SceneList;
+use std::path::Path;
 use std::thread;
 
 #[macro_use]
@@ -34,12 +37,39 @@ fn main() {
 
     // Dispatch each command to a new thread
     let config = get_config(&arg_parse);
+
+    // Place holder for the scene actions
+    if let Config::Scene = config {
+        println!("running scene",);
+        let nanoleaf_light = Nanoleaf::new(&config_path);
+
+        let temp_path = Path::new("/tmp/scene_list.json");
+
+        let sce = match SceneList::from_file(temp_path) {
+            Ok(list) => list,
+            Err(e) => {
+                println!("e = {:?}", e);
+                println!("Unable to read from cache");
+                let list = SceneList::from_scene(&nanoleaf_light);
+                list.to_file(temp_path);
+                list
+            }
+        };
+
+        println!("sce = {:?}", sce.names);
+        let signal = Sig::Scene;
+        nanoleaf_light.put(signal);
+
+        std::process::exit(0);
+    }
+
     let mut threads = vec![];
     for (_, light) in filtered_lights {
         threads.push(thread::spawn(move || match config {
             Config::Gradient(args) => config_parse::set_gradient(args, light),
             Config::On(signal) => light.put(signal),
             Config::Off => light.put(Sig::On(false)),
+            Config::Scene => std::process::exit(0),
         }));
     }
 
@@ -55,6 +85,7 @@ fn get_config(args: &ArgMatches) -> Config {
         ("gradient", Some(args)) => config_parse::get_gradient_config(args),
         ("on", Some(args)) => config_parse::get_on_config(args),
         ("off", _) => Config::Off,
+        ("scene", _) => Config::Scene,
         _ => Config::Off,
     }
 }

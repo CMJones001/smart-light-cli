@@ -27,6 +27,7 @@
 //! We note that these command changes all panels.
 
 use crate::common::{scalegen, ApiCommand, Lamp};
+use crate::scenes::Scene;
 use ini::Ini;
 use num_traits::{NumCast, NumOps};
 use palette::Hsv;
@@ -70,7 +71,7 @@ impl Lamp for Nanoleaf {
         )
     }
 
-    fn on_command(&self, state: bool) -> ApiCommand {
+    fn on_command(&self, state: bool) -> Option<ApiCommand> {
         let addr = "state/on".to_string();
         let mut cmd_dict = HashMap::new();
         let mut inner_struct = HashMap::new();
@@ -79,19 +80,19 @@ impl Lamp for Nanoleaf {
         cmd_dict.insert("on", inner_struct);
 
         let json = serde_json::to_string(&cmd_dict).unwrap();
-        ApiCommand { addr, json }
+        Some(ApiCommand { addr, json })
     }
 
-    fn brightness_command(&self, val: isize) -> ApiCommand {
+    fn brightness_command(&self, val: isize) -> Option<ApiCommand> {
         let addr = "state".to_string();
         let mut cmd_dict = HashMap::new();
         // TODO add duration keyword
         wrap_insert(&mut cmd_dict, "brightness", val);
         let json = serde_json::to_string(&cmd_dict).unwrap();
-        ApiCommand { addr, json }
+        Some(ApiCommand { addr, json })
     }
 
-    fn colour_command(&self, hue: isize, sat: isize, bri: isize) -> ApiCommand {
+    fn colour_command(&self, hue: isize, sat: isize, bri: isize) -> Option<ApiCommand> {
         let addr = "state".to_string();
         let mut cmd_dict = HashMap::new();
 
@@ -100,10 +101,10 @@ impl Lamp for Nanoleaf {
         wrap_insert(&mut cmd_dict, "brightness", bri);
 
         let json = serde_json::to_string(&cmd_dict).unwrap();
-        ApiCommand { addr, json }
+        Some(ApiCommand { addr, json })
     }
 
-    fn palette_command(&self, col: Hsv) -> ApiCommand {
+    fn palette_command(&self, col: Hsv) -> Option<ApiCommand> {
         let addr = "state".to_string();
         let mut cmd_dict = HashMap::new();
         let hue = col.hue.to_positive_degrees();
@@ -113,16 +114,25 @@ impl Lamp for Nanoleaf {
         wrap_insert_scale(&mut cmd_dict, "brightness", col.value, 1.0, 100);
 
         let json = serde_json::to_string(&cmd_dict).unwrap();
-        ApiCommand { addr, json }
+        Some(ApiCommand { addr, json })
     }
 
-    fn temperature_command(&self, temp: isize) -> ApiCommand {
+    fn temperature_command(&self, temp: isize) -> Option<ApiCommand> {
         let addr = "state".to_string();
         let mut cmd_dict = HashMap::new();
         let val = temp_mapping(temp);
         wrap_insert(&mut cmd_dict, "ct", val);
         let json = serde_json::to_string(&cmd_dict).unwrap();
-        ApiCommand { addr, json }
+        Some(ApiCommand { addr, json })
+    }
+
+    fn scene_command(&self, scene_name: String) -> Option<ApiCommand> {
+        let addr = "effects".to_string();
+        let mut outer_dict = HashMap::new();
+
+        outer_dict.insert("select".to_string(), "Golden sun".to_string());
+        let json = serde_json::to_string(&outer_dict).unwrap();
+        Some(ApiCommand { addr, json })
     }
 }
 
@@ -150,6 +160,8 @@ fn wrap_insert(outer_dict: &mut NestedDict, label: &str, value: isize) {
     inner_struct.insert("value".to_string(), value);
     outer_dict.insert(label.to_string(), inner_struct);
 }
+
+impl Scene for Nanoleaf {}
 
 #[cfg(test)]
 mod tests {

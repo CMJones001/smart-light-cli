@@ -52,3 +52,5 @@ subcommands:
             short: t
             help: Total time for the transition in seconds
             default_value: "5"
+  - scene: 
+      about: Load a complex scene

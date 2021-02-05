@@ -12,6 +12,7 @@ pub enum Config {
     Gradient(GradientArgs),
     On(Sig),
     Off,
+    Scene,
 }
 
 #[derive(Copy, Clone)]
@@ -41,7 +42,9 @@ pub fn get_gradient_config(args: &ArgMatches) -> Config {
 /// Parse the "on" subsection from the command line
 pub fn get_on_config(args: &ArgMatches) -> Config {
     let conf = if let Some(bri) = args.value_of("brightness") {
-        let brightness = bri.parse().unwrap();
+        let brightness = bri
+            .parse()
+            .expect("Unable to parse brightness value as int");
         Sig::Brightness(brightness)
     } else if let Some(temp) = args.value_of("temperature") {
         let temperature = temp.parse().unwrap();

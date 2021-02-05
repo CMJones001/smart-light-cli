@@ -92,25 +92,25 @@ impl Lamp for Hue {
         )
     }
 
-    fn on_command(&self, state: bool) -> ApiCommand {
+    fn on_command(&self, state: bool) -> Option<ApiCommand> {
         let addr = "state/on".to_string();
         let mut inner_struct = HashMap::new();
         inner_struct.insert("on", state);
 
         let json = serde_json::to_string(&inner_struct).unwrap();
-        ApiCommand { addr, json }
+        Some(ApiCommand { addr, json })
     }
 
-    fn brightness_command(&self, val: isize) -> ApiCommand {
+    fn brightness_command(&self, val: isize) -> Option<ApiCommand> {
         let addr = "state".to_string();
         let mut inner_struct = HashMap::new();
         let val = scale(val, 100, 255);
         inner_struct.insert("bri", val);
         let json = serde_json::to_string(&inner_struct).unwrap();
-        ApiCommand { addr, json }
+        Some(ApiCommand { addr, json })
     }
 
-    fn colour_command(&self, hue: isize, sat: isize, bri: isize) -> ApiCommand {
+    fn colour_command(&self, hue: isize, sat: isize, bri: isize) -> Option<ApiCommand> {
         let addr = "state".to_string();
         let hue = scale(hue, 360, 65535);
         let bri = scale(bri, 100, 255);
@@ -119,10 +119,10 @@ impl Lamp for Hue {
 
         let colours = ColourOnDict { hue, bri, sat, on };
         let json = serde_json::to_string(&colours).unwrap();
-        ApiCommand { addr, json }
+        Some(ApiCommand { addr, json })
     }
 
-    fn palette_command(&self, col: Hsv) -> ApiCommand {
+    fn palette_command(&self, col: Hsv) -> Option<ApiCommand> {
         let addr = "state".to_string();
         // TODO: We have to change the dict type into a mixed dict for the on command
 
@@ -133,14 +133,14 @@ impl Lamp for Hue {
 
         let mixed_dict = ColourOnDict { hue, sat, bri, on };
         let json = serde_json::to_string(&mixed_dict).unwrap();
-        ApiCommand { addr, json }
+        Some(ApiCommand { addr, json })
     }
 
-    fn temperature_command(&self, temp: isize) -> ApiCommand {
+    fn temperature_command(&self, temp: isize) -> Option<ApiCommand> {
         let addr = "state".to_string();
         let temp_dict = TempOnDict::new(temp);
         let json = serde_json::to_string(&temp_dict).unwrap();
-        ApiCommand { addr, json }
+        Some(ApiCommand { addr, json })
     }
 }
 
