@@ -1,5 +1,5 @@
 [package]
-name = "nanoleaf-cli"
+name = "smart-light-cli"
 version = "0.1.0"
 authors = ["Carl Jones <c.m.jones001@gmail.com>"]
 edition = "2018"
