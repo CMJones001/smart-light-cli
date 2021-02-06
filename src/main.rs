@@ -28,13 +28,20 @@ fn main() {
     ];
 
     // Select the lights of intrest as given by the CLI arguments
-    let selected_lamp_id: Vec<usize> = values_t!(arg_parse.values_of("lamp"), usize).unwrap();
+    let selected_lamp_id: Vec<usize> = values_t!(arg_parse.values_of("lamp"), usize)
+        .unwrap_or_else(|_| {
+            println!("Unable to parse lamp IDs");
+            std::process::exit(1)
+        });
     let filtered_lights = lights
         .into_iter()
         .enumerate()
         .filter(move |(num, _)| selected_lamp_id.contains(num));
 
-    let config = get_config(&arg_parse);
+    let config = get_config(&arg_parse).unwrap_or_else(|e| {
+        println!("Unable to parse config: {}", e);
+        std::process::exit(1)
+    });
 
     // Possibly quit early if the config > scene > list provided
     if let Config::Scene(_, list) = config {
@@ -65,12 +72,12 @@ fn main() {
 }
 
 /// Get a configuration object from the command line arguments
-fn get_config(args: &ArgMatches) -> Config {
+fn get_config(args: &ArgMatches) -> Result<Config, &'static str> {
     match &args.subcommand() {
         ("gradient", Some(args)) => config_parse::get_gradient_config(args),
         ("on", Some(args)) => config_parse::get_on_config(args),
         ("scene", Some(args)) => config_parse::get_scene_config(args),
-        ("off", _) => Config::Off,
-        _ => Config::Off,
+        ("off", _) => Ok(Config::Off),
+        _ => Err("No configuration values to read"),
     }
 }

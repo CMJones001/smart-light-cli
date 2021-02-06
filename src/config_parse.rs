@@ -24,7 +24,7 @@ pub struct GradientArgs {
 }
 
 /// Parse the "gradient" subsection from the command line
-pub fn get_gradient_config(args: &ArgMatches) -> Config {
+pub fn get_gradient_config(args: &ArgMatches) -> Result<Config, &'static str> {
     let total_time = value_t_or_exit!(args, "time", u64);
     let n_steps = value_t_or_exit!(args, "steps", u64);
     // TODO: Parse the palettes from the command line arguments
@@ -36,19 +36,21 @@ pub fn get_gradient_config(args: &ArgMatches) -> Config {
         hue_one,
         hue_two,
     };
-    Config::Gradient(args)
+    Ok(Config::Gradient(args))
 }
 
 /// Parse the "on" subsection from the command line
-pub fn get_on_config(args: &ArgMatches) -> Config {
+pub fn get_on_config(args: &ArgMatches) -> Result<Config, &'static str> {
     let conf = if let Some(bri) = args.value_of("brightness") {
-        let brightness = bri
-            .parse()
-            .expect("Unable to parse brightness value as int");
-        Sig::Brightness(brightness)
+        match bri.parse() {
+            Ok(brightness) => Sig::Brightness(brightness),
+            Err(_) => return Err("Unable to parse brightness values from CLI"),
+        }
     } else if let Some(temp) = args.value_of("temperature") {
-        let temperature = temp.parse().unwrap();
-        Sig::Temp(temperature)
+        match temp.parse() {
+            Ok(temperature) => Sig::Temp(temperature),
+            Err(_) => return Err("Unable to parse temperature values from CLI"),
+        }
     } else if args.is_present("colour") {
         let (hue, sat, bri) = unpack_values::<isize>(args, "colour");
         Sig::Colour(hue, sat, bri)
@@ -59,15 +61,15 @@ pub fn get_on_config(args: &ArgMatches) -> Config {
     } else {
         Sig::On(true)
     };
-    Config::On(conf)
+    Ok(Config::On(conf))
 }
 
-pub fn get_scene_config(args: &ArgMatches) -> Config {
+pub fn get_scene_config(args: &ArgMatches) -> Result<Config, &'static str> {
     if args.is_present("list") | !args.is_present("name") {
-        return Config::Scene("".to_string(), true);
+        return Ok(Config::Scene("".to_string(), true));
     }
     let scene_name = args.value_of("name").expect("Unable to parse scene name");
-    Config::Scene(scene_name.to_string(), false)
+    Ok(Config::Scene(scene_name.to_string(), false))
 }
 
 /// Transition between two colours
